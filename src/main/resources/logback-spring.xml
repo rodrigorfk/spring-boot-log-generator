@@ -2,10 +2,13 @@
 <configuration scan="false">
 
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
     <springProperty scope="context" name="env" source="spring.profiles.active"/>
     <springProperty scope="context" name="name" source="spring.application.name"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
