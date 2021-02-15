@@ -7,11 +7,13 @@ import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import io.vavr.CheckedRunnable;
 import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,6 +27,7 @@ public class GeneratorService {
         ExecutorService service = Executors.newFixedThreadPool(params.getThreads());
         ScheduledExecutorService canceller = Executors.newSingleThreadScheduledExecutor();
 
+        final String id = UUID.randomUUID().toString();
         final AtomicInteger counter = new AtomicInteger();
         RateLimiterConfig config = RateLimiterConfig.custom()
                 .limitRefreshPeriod(Duration.ofSeconds(1))
@@ -35,7 +38,7 @@ public class GeneratorService {
         RateLimiter rateLimiter = rateLimiterRegistry
                 .rateLimiter("name1");
         CheckedRunnable restrictedCall = RateLimiter
-                .decorateCheckedRunnable(rateLimiter, () -> doLog(params, counter));
+                .decorateCheckedRunnable(rateLimiter, () -> doLog(params, counter, id));
 
         CompletableFuture<Void> result = new CompletableFuture<>();
         List<Future<Void>> futures = new ArrayList<>();
@@ -48,7 +51,9 @@ public class GeneratorService {
             service.shutdown();
             canceller.shutdown();
             result.complete(null);
-            log.info("execution done {} messages generated", counter.get());
+            MDC.put("executionId", id);
+            log.info("execution done for task {}, {} messages generated", id, counter.get());
+            MDC.clear();
             return null;
         }, params.getDurationSeconds(), TimeUnit.SECONDS);
 
@@ -63,8 +68,9 @@ public class GeneratorService {
         });
     }
 
-    private void doLog(LogGeneratorApplication.Params params, AtomicInteger counter) {
+    private void doLog(LogGeneratorApplication.Params params, AtomicInteger counter, String id) {
 
+        MDC.put("executionId", id);
         String message = faker.lorem().characters(params.getMessageSizeMin(), params.getMessageSizeMax());
         switch (params.getLogLevel()){
             case DEBUG:
