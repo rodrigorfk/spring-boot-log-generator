@@ -1,0 +1,14 @@
+server:
+  tomcat:
+    accept-count: 10
+    max-threads: 10
+  port: 8080
+
+spring:
+  application:
+    name: log-generator
+
+logging:
+  level:
+    root: INFO
+    com.github.rodrigorfk: DEBUG
